@@ -1,9 +1,14 @@
 const std = @import("std");
+const dbg = @import("debug.zig");
 const stdout = std.io.getStdOut().writer();
 
 const Chunk = @import("chunk.zig").Chunk;
-const OpCode = @import("chunk.zig").OpCode;
-const dbg = @import("debug.zig");
+const OP = @import("chunk.zig").OP;
+const Code = @import("chunk.zig").Code;
+
+const Value = @import("value.zig").Value;
+
+const VM = @import("vm.zig").VM;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -18,16 +23,20 @@ pub fn main() !void {
         try stdout.print("{s}\n", .{arg});
     }
 
+    const vm: VM = VM.init(allocator);
+    defer vm.deinit();
+
     var chunk = Chunk.init(allocator);
     defer chunk.deinit();
 
-    const constant: usize = chunk.addConstand(1.2);
-    chunk.write(OpCode.CONSTANT);
-    chunk.write(constant);
+    const constant: OP = chunk.addConstant(Value{ .number = 1.2 });
+    chunk.write(OP{ .code = Code.CONSTANT }, 123);
+    chunk.write(constant, 123);
 
-    chunk.write(OpCode.RETURN);
+    chunk.write(OP{ .code = Code.RETURN }, 123);
 
     dbg.disassembleChunk(&chunk, "test chunk");
+    vm.interpret(&chunk);
 }
 
 test "simple test" {

@@ -2,8 +2,9 @@ const std = @import("std");
 const dbg = std.debug;
 
 const Chunk = @import("chunk.zig").Chunk;
-const OpCode = @import("chunk.zig").OpCode;
-const Value = @import("value.zig");
+const OP = @import("chunk.zig").OP;
+const Code = @import("chunk.zig").Code;
+const Value = @import("value.zig").Value;
 
 pub fn disassembleChunk(chunk: *Chunk, name: []const u8) void {
     dbg.print("== {s} ==\n", .{name});
@@ -17,22 +18,25 @@ pub fn disassembleChunk(chunk: *Chunk, name: []const u8) void {
 pub fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
     dbg.print("{d:0>4} ", .{offset});
 
-    const instruction: OpCode = chunk.code.?[offset];
-    switch (instruction) {
-        OpCode.CONSTANT => return constantInstruction("OpCode.CONSTANT", offset),
-        OpCode.RETURN => return simpleInstruction("OpCode.RETURN", offset),
-        // else => {
-        //     dbg.print("Unknown opcode {d}", .{instruction});
-        //     return offset + 1;
-        // },
+    if (offset > 0 and chunk.lines.?[offset] == chunk.lines.?[offset - 1]) {
+        dbg.print("   | ", .{});
+    } else {
+        dbg.print("{d: >4} ", .{chunk.lines.?[offset]});
+    }
+
+    const instruction: OP = chunk.code.?[offset];
+    switch (instruction.code) {
+        Code.CONSTANT => return constantInstruction("Code.CONSTANT", chunk, offset),
+        Code.RETURN => return simpleInstruction("Code.RETURN", offset),
     }
 }
 
 pub fn constantInstruction(name: []const u8, chunk: *Chunk, offset: usize) usize {
-    const constant: Value.Value = chunk.code.?[offset + 1];
-    dbg.print("{s: <16} {d: >4}", name, constant);
-    Value.printValue(chunk.constants.values.?[constant]);
-    dbg.print("\n");
+    const constant: OP = chunk.code.?[offset + 1];
+    dbg.print("{s: <16} {d: >4} '", .{ name, constant.value });
+    chunk.constants.values.?[constant.value].printValue();
+    dbg.print("'\n", .{});
+    return offset + 2;
 }
 
 pub fn simpleInstruction(name: []const u8, offset: usize) usize {

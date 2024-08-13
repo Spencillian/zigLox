@@ -30,7 +30,7 @@ pub fn reallocate(
     return result;
 }
 
-pub inline fn growCapacity(capacity: usize) usize {
+pub inline fn growCapacity(comptime T: type, capacity: T) T {
     return if (capacity < 8) 8 else capacity * 2;
 }
 
